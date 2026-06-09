@@ -672,19 +672,16 @@ function saveClientEdit(id){
     const sessions=getSessions().map(s=>s.type==='pt'&&s.clientId==id?{...s,clientName:name}:s);
     saveSessions(sessions);
   }
-  // Recalculate session numbers if pack changed or used count corrected
+  // Record a pack purchase with the corrected starting position
+  // This ensures getPackState (which uses pack purchases) reflects the correction
   if(packSize!==0&&packSize!==1){
-    const sessions=getSessions();
-    const clientSessions=sessions.filter(s=>s.type==='pt'&&s.clientId==id).sort((a,b)=>a.date.localeCompare(b.date));
-    let inPack=newUsed;
-    clientSessions.forEach(s=>{
-      const idx=sessions.findIndex(x=>x.id===s.id);
-      if(idx>-1){inPack++;sessions[idx].sessionNum=inPack;sessions[idx].packSize=packSize;if(inPack>=packSize)inPack=0;}
-    });
-    saveSessions(sessions);
+    const purchases=getPackPurchases().filter(p=>p.clientId!=id); // remove old purchases for this client
+    const today=new Date().toISOString().slice(0,10);
+    purchases.push({id:Date.now(),clientId:id,packSize,date:today,startedAt:newUsed});
+    savePackPurchases(purchases);
   }
-  populateDropdown();renderClients();
-  showToast('✓ '+name+' updated');
+  populateDropdown();renderClients();onClientChange();
+  showToast('✓ '+name+' updated · '+newUsed+'/'+packSize+' sessions set');
 }
 
 function renderClients(){

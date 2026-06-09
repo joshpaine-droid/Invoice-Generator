@@ -945,7 +945,7 @@ function confirmImport(){
     }
   });
   document.getElementById('import-actions').style.display='none';
-  document.getElementById('import-status').innerHTML='<span style="color:var(--green);">✓ '+logged+' session'+(logged!==1?'s':'')+' logged'+(added?' · '+added+' new client'+(added>1?'s':'')+' added':'')+'</span><br><button onclick="switchTab('invoice')" style="margin-top:10px;width:100%;padding:11px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">View invoice →</button><button onclick="switchTab('history')" style="margin-top:8px;width:100%;padding:11px;background:var(--bg3);color:var(--text);border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">View history</button>';
+  document.getElementById('import-status').innerHTML='<span style="color:var(--green);">✓ '+logged+' session'+(logged!==1?'s':'')+' logged'+(added?' · '+added+' new client'+(added>1?'s':'')+' added':'')+'</span><br><button onclick="switchTab(&quot;invoice&quot;)" style="margin-top:10px;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">View invoice →</button><button onclick="switchTab(&quot;history&quot;)" style="margin-top:8px;width:100%;padding:11px;background:var(--bg3);color:var(--text);border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">View history</button>';
   document.querySelectorAll('.detected-row.matched').forEach(el=>el.classList.add('confirmed'));
   showToast('✓ '+logged+' sessions logged');
 }

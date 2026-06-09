@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Invoice Generator" />
+<meta name="theme-color" content="#111111" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Invoice Generator</title>
+<style>
+  :root {
+    /* JP Brand: Black + Orange + Grey */
+    --bg: #111111;
+    --bg2: #1e1e1e;
+    --bg3: #2a2a2a;
+    --bg4: #333333;
+    --text: #f0f0f0;
+    --text2: #a0a0a0;
+    --text3: #666666;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #FF6B1A;
+    --accent-dark: #cc5500;
+    --accent-dim: rgba(255,107,26,0.15);
+    --blue: #4da3ff;
+    --green: #34c759;
+    --amber: #FF6B1A;
+    --red: #ff453a;
+    --blue-bg: #1c2f4a;
+    --green-bg: #1a3a25;
+    --amber-bg: rgba(255,107,26,0.12);
+    --red-bg: #3a1a1a;
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+    --nav-h: 64px;
+    --header-bg: #0a0a0a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* LAYOUT */
+  #app { display: flex; flex-direction: column; height: 100%; }
+  .header { 
+    padding: calc(var(--safe-top) + 10px) 16px 12px; 
+    background: var(--bg); 
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 13px; color: var(--text2); margin-top: 1px; }
+  .month-nav { display: flex; align-items: center; gap: 6px; }
+  .month-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--bg2); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text); font-size: 14px; }
+
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 16px 16px; }
+  
+  .bottom-nav {
+    display: flex;
+    background: var(--header-bg);
+    border-top: 0.5px solid rgba(255,107,26,0.2);
+    padding-bottom: var(--safe-bottom);
+    flex-shrink: 0;
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0 4px; cursor: pointer; border: none; background: none; color: var(--text3); gap: 3px; transition: color 0.15s; }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 22px; line-height: 1; }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; border: 0.5px solid var(--border); }
+  .card-white { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+
+  /* SECTION TITLES */
+  .section-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin: 18px 0 8px 2px; }
+
+  /* INPUTS */
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 11px 14px; border: 0.5px solid var(--border2);
+    border-radius: 10px; background: var(--bg); color: var(--text);
+    font-size: 16px; font-family: inherit; outline: none; appearance: none; -webkit-appearance: none;
+  }
+  input[type="date"] { font-size: 15px; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+  /* BUTTONS */
+  .btn { padding: 13px 20px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; width: 100%; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.7; }
+  .btn-black { background: var(--accent); color: #ffffff; font-weight: 700; letter-spacing: 0.01em; }
+  .btn-gray { background: var(--bg3); color: var(--text); }
+  .btn-small { padding: 6px 14px; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; border: none; font-family: inherit; }
+  .btn-ghost { background: none; border: 0.5px solid var(--border2); color: var(--text); }
+
+  /* PILL TOGGLES */
+  .pill-group { display: flex; background: #0a0a0a; border-radius: 10px; padding: 3px; gap: 3px; margin-bottom: 14px; border: 0.5px solid var(--border); }
+  .pill { flex: 1; padding: 8px; text-align: center; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text2); font-family: inherit; transition: all 0.15s; }
+  .pill.active { background: var(--accent); color: #ffffff; font-weight: 600; box-shadow: 0 2px 8px rgba(255,107,26,0.3); }
+
+  /* CHIP SELECTORS */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip { padding: 7px 14px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border2); background: none; color: var(--text2); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .chip.active { background: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 600; }
+
+  /* BADGES */
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+  /* LIST ROWS */
+  .list-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .list-row:last-child { border-bottom: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; border: 1px solid rgba(255,107,26,0.3); }
+
+  /* METRICS */
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .metric { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+  .metric-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* INVOICE */
+  .invoice-mono { font-family: 'SF Mono', 'Courier New', monospace; font-size: 12px; background: #0a0a0a; border: 0.5px solid rgba(255,107,26,0.2); border-radius: 12px; padding: 14px; white-space: pre; overflow-x: auto; line-height: 1.75; color: #e0e0e0; }
+
+  /* IMPORT */
+  .drop-zone { border: 1.5px dashed rgba(255,107,26,0.4); border-radius: 16px; padding: 36px 20px; text-align: center; cursor: pointer; margin-bottom: 14px; background: rgba(255,107,26,0.03); }
+  .drop-zone:active { background: var(--bg2); }
+  .drop-zone input { display: none; }
+  .drop-icon { font-size: 44px; margin-bottom: 10px; }
+  .preview-img { width: 100%; border-radius: 12px; margin-bottom: 14px; border: 0.5px solid var(--border); }
+  .detected-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; background: var(--bg2); margin-bottom: 6px; }
+  .detected-row.matched { background: var(--green-bg); }
+  .detected-row.unmatched { opacity: 0.5; }
+  .detected-row.confirmed { background: var(--green-bg); }
+
+  /* SPINNER */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -4px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* DATE GROUP */
+  .date-header { font-size: 13px; font-weight: 600; color: var(--text2); padding: 10px 0 4px; }
+
+  /* FORM ROWS */
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 13px; color: var(--text2); margin-bottom: 5px; display: block; }
+  .inline-row { display: flex; gap: 10px; align-items: center; }
+  .inline-row label { font-size: 15px; flex: 1; }
+  .inline-row input { width: 90px; flex-shrink: 0; }
+
+  /* SUCCESS TOAST */
+  #toast { position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 10px); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--accent); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 600; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 999; box-shadow: 0 4px 20px rgba(255,107,26,0.4); }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div class="header" style="background:var(--header-bg);padding:calc(var(--safe-top) + 8px) 16px 12px;border-bottom:0.5px solid rgba(255,107,26,0.2);">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <img id="jp-logo" src="logo.png" style="width:36px;height:36px;object-fit:contain;border-radius:8px;background:#1e1e1e;padding:2px;" />
+        <div>
+          <div style="font-size:17px;font-weight:700;letter-spacing:-0.4px;color:#f0f0f0;">Invoice Generator</div>
+          <div style="font-size:12px;color:var(--accent);font-weight:500;letter-spacing:0.02em;" id="month-label"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="month-btn" onclick="changeMonth(-1)" style="background:#2a2a2a;border:0.5px solid rgba(255,107,26,0.3);color:#f0f0f0;">‹</button>
+        <button class="month-btn" onclick="changeMonth(1)" style="background:#2a2a2a;border:0.5px solid rgba(255,107,26,0.3);color:#f0f0f0;">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll-area" id="scroll-area">
+
+    <!-- IMPORT -->
+    <div id="tab-import">
+      <div id="expiry-banner"></div>
+      <div style="color:var(--text2);font-size:14px;line-height:1.5;padding:14px 0 4px;">Screenshot your iPhone calendar and upload it — Claude will read your sessions and log them automatically.</div>
+
+      <div id="import-s1">
+        <label class="drop-zone" id="drop-zone">
+          <input type="file" id="img-upload" accept="image/*" multiple onchange="handleImageUpload(event)" />
+          <div class="drop-icon">📸</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:4px;">Upload screenshot</div>
+          <div style="font-size:13px;color:var(--text2);">Select one or more screenshots</div>
+        </label>
+      </div>
+
+      <div id="import-s2" style="display:none;">
+        <div id="img-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;-webkit-overflow-scrolling:touch;"></div>
+        <div id="import-status" style="font-size:14px;margin-bottom:12px;"></div>
+        <div id="detected-list"></div>
+        <div id="import-actions" style="display:none;margin-top:10px;">
+          <button class="btn btn-black" onclick="confirmImport()" style="margin-bottom:8px;">Log all sessions</button>
+          <button class="btn btn-gray" onclick="addMorePhotos()" style="margin-bottom:8px;">Add more photos</button>
+          <button class="btn btn-gray" onclick="resetImport()">Start over</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div id="tab-log" style="display:none;">
+      <div class="pill-group">
+        <button class="pill active" id="pill-pt" onclick="setType('pt')">PT session</button>
+        <button class="pill" id="pill-class" onclick="setType('class')">Group class</button>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Date</label>
+        <input type="date" id="session-date" />
+      </div>
+
+      <div id="pt-fields">
+        <div class="form-row">
+          <label class="form-label">Client</label>
+          <select id="pt-client" onchange="onClientChange()">
+            <option value="">Select client…</option>
+          </select>
+        </div>
+        <div id="pack-status" style="display:none;background:var(--bg2);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>
+        <div class="form-row">
+          <label class="form-label">Notes (optional)</label>
+          <input type="text" id="pt-notes" placeholder="e.g. outdoor session" />
+        </div>
+      </div>
+
+      <div id="class-fields" style="display:none;">
+        <div class="form-row">
+          <label class="form-label">Time</label>
+          <div class="chip-row" id="time-chips">
+            <button class="chip" onclick="selectTime(this,'05:30')">05:30</button>
+            <button class="chip" onclick="selectTime(this,'06:15')">06:15</button>
+            <button class="chip" onclick="selectTime(this,'07:15')">07:15</button>
+            <button class="chip" onclick="selectTime(this,'08:00')">08:00</button>
+            <button class="chip" onclick="selectTime(this,'12:00')">12:00</button>
+            <button class="chip" onclick="selectTime(this,'13:00')">13:00</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Duration</label>
+          <div class="chip-row" id="dur-chips">
+            <button class="chip" onclick="selectDur(this,35)">35 min</button>
+            <button class="chip" onclick="selectDur(this,45)">45 min</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-black" onclick="logSession()">Log session</button>
+
+      <div class="section-title" style="margin-top:22px;">Logged today</div>
+      <div id="today-summary"></div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div id="tab-clients" style="display:none;">
+      <div class="card">
+        <div style="font-size:15px;font-weight:600;margin-bottom:12px;">Add client</div>
+        <div class="form-row">
+          <input type="text" id="new-name" placeholder="Client name" />
+        </div>
+        <div class="form-row">
+          <select id="new-pack">
+            <option value="1">Single sessions (1/1)</option>
+            <option value="6">6-session pack</option>
+            <option value="10" selected>10-session pack</option>
+            <option value="0">Open / rolling</option>
+          </select>
+        </div>
+        <button class="btn btn-black" onclick="addClient()">Add client</button>
+      </div>
+      <div class="section-title">All clients</div>
+      <div class="card-white" id="client-list"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" style="display:none;">
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-value" id="m-pt">0</div><div class="metric-label">PT sessions</div></div>
+        <div class="metric"><div class="metric-value" id="m-class">0</div><div class="metric-label">Classes</div></div>
+        <div class="metric"><div class="metric-value" id="m-income">£0</div><div class="metric-label">Income</div></div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- INVOICE -->
+    <div id="tab-invoice" style="display:none;">
+      <div class="card">
+        <div style="font-size:15px;font-weight:600;margin-bottom:14px;">Pricing</div>
+        <div class="inline-row" style="margin-bottom:10px;"><label>PT session</label><input type="number" id="rate-pt" oninput="renderInvoice()" value="32.50" /></div>
+        <div class="inline-row" style="margin-bottom:10px;"><label>45-min class</label><input type="number" id="rate-45" oninput="renderInvoice()" value="32.50" /></div>
+        <div class="inline-row" style="margin-bottom:10px;"><label>35-min class</label><input type="number" id="rate-35" oninput="renderInvoice()" value="27.50" /></div>
+        <div class="inline-row"><label>Monthly programs</label><input type="number" id="rate-monthly" oninput="renderInvoice()" value="0" /></div>
+      </div>
+
+      <div class="section-title">Preview</div>
+      <div class="invoice-mono" id="invoice-preview"></div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button class="btn btn-black" onclick="downloadInvoice()" style="flex:2;">Download PDF</button>
+        <button class="btn btn-gray btn-ghost" onclick="copyInvoice()" style="flex:1;">Copy</button>
+      </div>
+
+      <div class="section-title" style="margin-top:22px;">Backup & Restore</div>
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;">Export all your data as a backup file. If you ever delete the app or switch devices, restore it here.</div>
+        <button class="btn btn-gray" onclick="exportBackup()" style="margin-bottom:8px;">⬇️ Export backup</button>
+        <label class="btn btn-gray" style="display:block;text-align:center;cursor:pointer;">
+          ⬆️ Restore from backup
+          <input type="file" id="restore-input" accept=".json" onchange="importBackup(event)" style="display:none;" />
+        </label>
+        <div id="restore-msg" style="margin-top:8px;font-size:13px;text-align:center;"></div>
+      </div>
+    </div>
+
+  </div><!-- end scroll-area -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('import')" id="nav-import">
+      <span class="nav-icon">📸</span>
+      <span class="nav-label">Import</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('log')" id="nav-log">
+      <span class="nav-icon">✏️</span>
+      <span class="nav-label">Log</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('clients')" id="nav-clients">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Clients</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('history')" id="nav-history">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">History</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('invoice')" id="nav-invoice">
+      <span class="nav-icon">🧾</span>
+      <span class="nav-label">Invoice</span>
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// *** SET THIS TO YOUR CLOUDFLARE WORKER URL AFTER DEPLOYING ***
+const PROXY_URL = 'https://super-mode-b13a.joshpaine.workers.dev';
+
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let curMonth, curYear, sessionType='pt', selTime=null, selDur=null, detectedSessions=[], curTab='import';
+
+// STORAGE
+const getClients=()=>{try{return JSON.parse(localStorage.getItem('ig_clients')||'[]');}catch{return[];}};
+const saveClients=c=>localStorage.setItem('ig_clients',JSON.stringify(c));
+const getSessions=()=>{try{return JSON.parse(localStorage.getItem('ig_sessions')||'[]');}catch{return[];}};
+const saveSessions=s=>localStorage.setItem('ig_sessions',JSON.stringify(s));
+// Invoice period: 16th of curMonth/curYear to 15th of next month
+function getPeriod(){
+  const start=new Date(curYear,curMonth,16);
+  const end=new Date(curYear,curMonth+1,15);
+  const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return{start:fmt(start),end:fmt(end),startD:start,endD:end};
+}
+const getMonthSessions=()=>{
+  const{start,end}=getPeriod();
+  return getSessions().filter(s=>s.date>=start&&s.date<=end);
+};
+
+function showToast(msg,color='#1e8a44'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=color;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// DATE — auto-detect which billing period we are currently in
+// 1st-15th: period started 16th of previous month
+// 16th-31st: period started 16th of this month
+function initDate(){
+  const d=new Date();
+  if(d.getDate()<16){curMonth=d.getMonth()-1;curYear=d.getFullYear();if(curMonth<0){curMonth=11;curYear--;}}
+  else{curMonth=d.getMonth();curYear=d.getFullYear();}
+  updateMonthLabel();
+  document.getElementById('session-date').value=d.toISOString().slice(0,10);
+}
+function updateMonthLabel(){
+  const{startD,endD}=getPeriod();
+  const fmt=d=>d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  document.getElementById('month-label').textContent=fmt(startD)+' – '+fmt(endD)+' '+endD.getFullYear();
+}
+function changeMonth(dir){curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}updateMonthLabel();if(curTab==='history')renderHistory();if(curTab==='invoice')renderInvoice();if(curTab==='import')renderExpiryBanner();}
+
+// TABS
+function getExpiryWarnings(){
+  return getClients().filter(c=>{
+    if(c.packSize<=1||c.packSize===0)return false;
+    const st=getPackState(c.id);
+    if(!st)return false;
+    return st.remaining<=2&&!st.isNew;
+  });
+}
+function renderExpiryBanner(){
+  const el=document.getElementById('expiry-banner');
+  if(!el)return;
+  const warn=getExpiryWarnings();
+  if(!warn.length){el.style.display='none';return;}
+  el.style.display='';
+  el.innerHTML='<div style="background:var(--amber-bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--amber);">⚠️ <strong>Pack expiring soon:</strong> '+warn.map(c=>{const st=getPackState(c.id);return c.name+' ('+st.remaining+' left)';}).join(', ')+'</div>';
+}
+function switchTab(tab){
+  curTab=tab;
+  ['import','log','clients','history','invoice'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+    document.getElementById('nav-'+t).classList.toggle('active',t===tab);
+  });
+  document.getElementById('scroll-area').scrollTop=0;
+  renderExpiryBanner();
+  if(tab==='history')renderHistory();
+  if(tab==='clients')renderClients();
+  if(tab==='invoice')renderInvoice();
+}
+
+// SESSION TYPE
+function setType(t){
+  sessionType=t;
+  document.getElementById('pt-fields').style.display=t==='pt'?'':'none';
+  document.getElementById('class-fields').style.display=t==='class'?'':'none';
+  document.getElementById('pill-pt').classList.toggle('active',t==='pt');
+  document.getElementById('pill-class').classList.toggle('active',t==='class');
+}
+function selectTime(btn,t){selTime=t;document.querySelectorAll('#time-chips .chip').forEach(b=>b.classList.toggle('active',b===btn));}
+function selectDur(btn,d){selDur=d;document.querySelectorAll('#dur-chips .chip').forEach(b=>b.classList.toggle('active',b===btn));}
+
+// PACK STATE
+function getPackPurchases(){try{return JSON.parse(localStorage.getItem('ig_packs')||'[]');}catch{return[];}}
+function savePackPurchases(p){localStorage.setItem('ig_packs',JSON.stringify(p));}
+
+// packSize===1 = single sessions, packSize===0 = open/rolling
+// Pack purchases reset the counter — sessions are counted from the last purchase date
+function getPackState(clientId){
+  const allSessions=getSessions().filter(s=>s.type==='pt'&&s.clientId==clientId).sort((a,b)=>a.date.localeCompare(b.date));
+  const c=getClients().find(c=>c.id==clientId);
+  if(!c)return null;
+  if(c.packSize===1) return{total:allSessions.length,inPack:1,packSize:1,remaining:null,single:true};
+  if(c.packSize===0) return{total:allSessions.length,inPack:allSessions.length,packSize:0,remaining:null,open:true};
+
+  // Get pack purchases for this client, sorted by date
+  const purchases=getPackPurchases().filter(p=>p.clientId==clientId).sort((a,b)=>a.date.localeCompare(b.date));
+
+  // Find the most recent pack purchase and count sessions since then
+  let currentPackSize=c.packSize;
+  let sessionsFromLastPurchase=allSessions.length;
+  let lastPurchaseDate=null;
+
+  if(purchases.length>0){
+    const lastPurchase=purchases[purchases.length-1];
+    lastPurchaseDate=lastPurchase.date;
+    currentPackSize=lastPurchase.packSize;
+    sessionsFromLastPurchase=allSessions.filter(s=>s.date>=lastPurchase.date).length;
+  }
+
+  const remaining=currentPackSize-sessionsFromLastPurchase;
+  const isNew=sessionsFromLastPurchase>currentPackSize;
+  const newPackCount=isNew?sessionsFromLastPurchase-currentPackSize:0;
+
+  return{
+    total:allSessions.length,
+    inPack:sessionsFromLastPurchase,
+    packSize:currentPackSize,
+    remaining:Math.max(0,remaining),
+    isNew,
+    newPackCount,
+    single:false,
+    purchases:purchases.length
+  };
+}
+
+function onClientChange(){
+  const id=document.getElementById('pt-client').value;
+  const el=document.getElementById('pack-status');
+  if(!id){el.style.display='none';return;}
+  const st=getPackState(id);
+  if(!st){el.style.display='none';return;}
+  el.style.display='';
+  if(st.single){el.innerHTML='Single sessions · each logged as 1/1 · '+st.total+' total so far';return;}
+  if(st.packSize===0){el.innerHTML='Open-ended · '+st.total+' sessions logged';return;}
+  if(st.total>=st.packSize){
+    const newNum=(st.newPackCount||0)+1;
+    el.innerHTML='Next session: <strong>'+newNum+'/new</strong> &nbsp;<span class="badge badge-red">Pack exhausted — logging as new</span>';
+    return;
+  }
+  const next=st.inPack+1,rem=st.remaining-1;
+  const bc=rem<=0?'badge-red':rem<=2?'badge-amber':'badge-green';
+  const label=rem<=0?'Pack complete after this':rem+' left after this';
+  el.innerHTML='Next session: <strong>'+next+'/'+st.packSize+'</strong> &nbsp;<span class="badge '+bc+'">'+label+'</span>';
+}
+
+function populateDropdown(){
+  const sel=document.getElementById('pt-client');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Select client…</option>';
+  getClients().sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id;o.textContent=c.name;if(c.id==cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+// LOG SESSION
+function doLog(type,date,clientId,clientName,notes,time,duration,label){
+  const sessions=getSessions();
+  if(type==='pt'){
+    const c=getClients().find(c=>c.id==clientId);
+    const isSingle=c&&c.packSize===1;
+    const st=getPackState(clientId);
+    let num, packSize, isNew=false;
+    if(isSingle){
+      num=1; packSize=1;
+    } else if(c&&c.packSize>0&&st&&st.total>=c.packSize){
+      // Pack exhausted — record as /new
+      num=st.newPackCount+1; packSize='new'; isNew=true;
+    } else {
+      num=st?st.inPack+1:1; packSize=c?c.packSize:0;
+    }
+    sessions.push({id:Date.now()+Math.random(),type:'pt',date,clientId,clientName,sessionNum:num,packSize,isNew,notes:notes||''});
+  }else if(type==='monthly'){
+    sessions.push({id:Date.now()+Math.random(),type:'monthly',date,label:label||'Georgia K Monthly Programme'});
+  }else{
+    sessions.push({id:Date.now()+Math.random(),type:'class',date,time,duration});
+  }
+  saveSessions(sessions);
+}
+
+function logSession(){
+  const date=document.getElementById('session-date').value;
+  if(!date){showToast('Pick a date first','#c0392b');return;}
+  if(sessionType==='pt'){
+    const id=document.getElementById('pt-client').value;
+    if(!id){showToast('Select a client','#c0392b');return;}
+    const c=getClients().find(c=>c.id==id);
+    doLog('pt',date,id,c?c.name:'',document.getElementById('pt-notes').value);
+    document.getElementById('pt-notes').value='';
+    onClientChange();
+    showToast('✓ Logged — '+(c?c.name:''));
+  }else{
+    if(!selTime){showToast('Select a time','#c0392b');return;}
+    if(!selDur){showToast('Select duration','#c0392b');return;}
+    doLog('class',date,null,null,null,selTime,selDur);
+    showToast('✓ Class logged — '+selTime);
+  }
+  renderTodaySummary();
+}
+
+function renderTodaySummary(){
+  const date=document.getElementById('session-date').value;
+  const sessions=getSessions().filter(s=>s.date===date);
+  const el=document.getElementById('today-summary');
+  if(!sessions.length){el.innerHTML='<div style="color:var(--text3);font-size:14px;padding:10px 0;">Nothing logged yet for this date.</div>';return;}
+  let html='<div class="card-white">';
+  sessions.forEach(s=>{
+    if(s.type==='pt')html+='<div class="list-row"><div class="avatar">'+s.clientName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()+'</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.clientName+'</div><div style="font-size:13px;color:var(--text2);">Session '+s.sessionNum+'/'+(s.packSize||'?')+'</div></div><button onclick="delSession('+s.id+')" style="color:var(--red);background:none;border:none;font-size:20px;cursor:pointer;padding:0 4px;">×</button></div>';
+    else html+='<div class="list-row"><div style="font-size:22px;">🏃</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.time+' class</div><div style="font-size:13px;color:var(--text2);">'+s.duration+' min</div></div><button onclick="delSession('+s.id+')" style="color:var(--red);background:none;border:none;font-size:20px;cursor:pointer;padding:0 4px;">×</button></div>';
+  });
+  el.innerHTML=html+'</div>';
+}
+
+function delSession(id){saveSessions(getSessions().filter(s=>s.id!=id));renderTodaySummary();}
+
+// CLIENTS
+function addClient(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name)return;
+  const pack=parseInt(document.getElementById('new-pack').value);
+  const clients=getClients();
+  clients.push({id:Date.now(),name,packSize:pack});
+  saveClients(clients);
+  document.getElementById('new-name').value='';
+  renderClients();populateDropdown();renderExpiryBanner();
+  showToast('✓ '+name+' added');
+}
+function removeClient(id){
+  if(!confirm('Remove this client?'))return;
+  saveClients(getClients().filter(c=>c.id!=id));
+  renderClients();populateDropdown();
+}
+
+function editClient(id){
+  const clients=getClients();
+  const c=clients.find(c=>c.id==id);
+  if(!c)return;
+  const st=getPackState(id);
+  const row=document.getElementById('cr-'+id);
+  if(!row)return;
+  const sessionsInPack=st?st.inPack:0;
+  const packSize=c.packSize;
+  row.innerHTML=`<div style="width:100%;padding:4px 0;">
+    <div style="margin-bottom:8px;"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">Name</label>
+    <input type="text" id="edit-name-${id}" value="${c.name.replace(/"/g,'&quot;')}" style="width:100%;font-size:15px;" /></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">Pack size</label>
+      <select id="edit-pack-${id}" style="width:100%;font-size:14px;" onchange="editPackChanged(${id})">
+        <option value="1" ${packSize===1?'selected':''}>Singles (1/1)</option>
+        <option value="6" ${packSize===6?'selected':''}>6-pack</option>
+        <option value="10" ${packSize===10?'selected':''}>10-pack</option>
+        <option value="0" ${packSize===0?'selected':''}>Open</option>
+      </select></div>
+      <div style="flex:1;" id="edit-used-wrap-${id}"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">Sessions used in pack</label>
+      <input type="number" id="edit-used-${id}" value="${sessionsInPack}" min="0" max="${packSize||99}" style="width:100%;font-size:14px;" /></div>
+    </div>
+    <div style="margin-bottom:10px;padding:10px 12px;background:var(--bg3);border-radius:10px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">New pack purchased</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="recordNewPack(${id},6)" style="flex:1;padding:8px;background:none;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text);">+ 6-pack</button>
+          <button onclick="recordNewPack(${id},10)" style="flex:1;padding:8px;background:none;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text);">+ 10-pack</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+      <button onclick="saveClientEdit(${id})" style="flex:1;padding:9px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save</button>
+      <button onclick="renderClients()" style="flex:1;padding:9px;background:var(--bg3);color:var(--text);border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button onclick="removeClient(${id})" style="padding:9px 14px;background:none;border:0.5px solid var(--red);color:var(--red);border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">Remove</button>
+    </div></div>`;
+  editPackChanged(id);
+}
+
+function editPackChanged(id){
+  const pack=parseInt(document.getElementById('edit-pack-'+id).value);
+  const wrap=document.getElementById('edit-used-wrap-'+id);
+  if(wrap)wrap.style.display=(pack===0||pack===1)?'none':'';
+  const usedInput=document.getElementById('edit-used-'+id);
+  if(usedInput&&pack>0&&pack!==1)usedInput.max=pack;
+}
+
+function recordNewPack(clientId, packSize){
+  const purchases=getPackPurchases();
+  const today=new Date().toISOString().slice(0,10);
+  purchases.push({id:Date.now(),clientId,packSize,date:today});
+  savePackPurchases(purchases);
+  // Update client's default packSize to match latest purchase
+  const clients=getClients();
+  const c=clients.find(c=>c.id==clientId);
+  if(c){c.packSize=packSize;saveClients(clients);}
+  renderClients();populateDropdown();
+  const st=getPackState(clientId);
+  showToast('✓ '+packSize+'-pack recorded · '+(st?st.remaining:packSize)+' sessions remaining');
+}
+
+function saveClientEdit(id){
+  const name=document.getElementById('edit-name-'+id).value.trim();
+  const packSize=parseInt(document.getElementById('edit-pack-'+id).value);
+  const usedInput=document.getElementById('edit-used-'+id);
+  const newUsed=usedInput?Math.max(0,parseInt(usedInput.value)||0):0;
+  if(!name){showToast('Name cannot be empty','#c0392b');return;}
+  const clients=getClients();
+  const c=clients.find(c=>c.id==id);
+  if(!c)return;
+  const oldName=c.name;
+  c.name=name;c.packSize=packSize;
+  saveClients(clients);
+  // Update session records with new name
+  if(name!==oldName){
+    const sessions=getSessions().map(s=>s.type==='pt'&&s.clientId==id?{...s,clientName:name}:s);
+    saveSessions(sessions);
+  }
+  // Recalculate session numbers if pack changed or used count corrected
+  if(packSize!==0&&packSize!==1){
+    const sessions=getSessions();
+    const clientSessions=sessions.filter(s=>s.type==='pt'&&s.clientId==id).sort((a,b)=>a.date.localeCompare(b.date));
+    let inPack=newUsed;
+    clientSessions.forEach(s=>{
+      const idx=sessions.findIndex(x=>x.id===s.id);
+      if(idx>-1){inPack++;sessions[idx].sessionNum=inPack;sessions[idx].packSize=packSize;if(inPack>=packSize)inPack=0;}
+    });
+    saveSessions(sessions);
+  }
+  populateDropdown();renderClients();
+  showToast('✓ '+name+' updated');
+}
+
+function renderClients(){
+  const clients=getClients();
+  const el=document.getElementById('client-list');
+  if(!clients.length){el.innerHTML='<div style="color:var(--text3);font-size:14px;padding:10px 0;">No clients yet.</div>';return;}
+  let html='';
+  clients.sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
+    const st=getPackState(c.id);
+    let badge='';
+    if(c.packSize===1)badge='<span class="badge badge-blue">singles</span>';
+    else if(c.packSize===0)badge='<span class="badge badge-blue">open</span>';
+    else if(st&&st.isNew)badge='<span class="badge badge-red">pack done</span>';
+    else if(st){const r=st.remaining;badge=r<=0?'<span class="badge badge-red">pack done</span>':r<=2?'<span class="badge badge-amber">'+r+' left</span>':'<span class="badge badge-green">'+r+' left</span>';}
+    const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    html+='<div class="list-row" id="cr-'+c.id+'"><div class="avatar">'+ini+'</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+c.name+'</div><div style="font-size:12px;color:var(--text2);">'+(c.packSize===1?'single sessions':c.packSize?c.packSize+'-pack':'open')+' · '+(st?st.total:0)+' sessions total'+(c.packSize>1&&st?' · '+st.inPack+'/'+c.packSize+' used':'')+'</div></div>'+badge+'&nbsp;&nbsp;<button onclick="editClient('+c.id+')" style="color:var(--text2);background:none;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;padding:5px 12px;cursor:pointer;font-family:inherit;">Edit</button></div>';
+  });
+  el.innerHTML=html;
+}
+
+// HISTORY
+function renderHistory(){
+  const sessions=getMonthSessions().sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  const pt=sessions.filter(s=>s.type==='pt').length;
+  const cl=sessions.filter(s=>s.type==='class').length;
+  const rPt=parseFloat(document.getElementById('rate-pt')?document.getElementById('rate-pt').value:32.50)||32.50;
+  const r45=parseFloat(document.getElementById('rate-45')?document.getElementById('rate-45').value:32.50)||32.50;
+  const r35=parseFloat(document.getElementById('rate-35')?document.getElementById('rate-35').value:27.50)||27.50;
+  const c45=sessions.filter(s=>s.type==='class'&&s.duration===45).length;
+  const c35=sessions.filter(s=>s.type==='class'&&s.duration===35).length;
+  document.getElementById('m-pt').textContent=pt;
+  document.getElementById('m-class').textContent=cl;
+  document.getElementById('m-income').textContent='£'+(pt*rPt+c45*r45+c35*r35).toFixed(0);
+  const el=document.getElementById('history-list');
+  if(!sessions.length){el.innerHTML='<div style="color:var(--text3);font-size:14px;padding:20px 0;text-align:center;">No sessions for '+MONTHS[curMonth]+'.</div>';return;}
+  let html='<div class="card-white">',last='';
+  sessions.forEach(s=>{
+    if(s.date!==last){
+      const d=new Date(s.date+'T12:00:00');
+      html+='<div class="date-header">'+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</div>';
+      last=s.date;
+    }
+    if(s.type==='pt')html+='<div class="list-row"><div class="avatar">'+s.clientName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()+'</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.clientName+'</div><div style="font-size:12px;color:var(--text2);">Session '+s.sessionNum+'/'+(s.isNew?'new':s.packSize||'?')+'</div></div><button onclick="delSession('+s.id+');renderHistory();" style="color:var(--text3);background:none;border:none;font-size:20px;cursor:pointer;">×</button></div>';
+    else html+='<div class="list-row"><div style="font-size:22px;">🏃</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.time+' class</div><div style="font-size:12px;color:var(--text2);">'+s.duration+' min</div></div><button onclick="delSession('+s.id+');renderHistory();" style="color:var(--text3);background:none;border:none;font-size:20px;cursor:pointer;">×</button></div>';
+  });
+  el.innerHTML=html+'</div>';
+}
+
+// INVOICE
+function buildInvoice(){
+  const sessions=getMonthSessions().sort((a,b)=>a.date.localeCompare(b.date));
+  const byDate={};sessions.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+  const rPt=parseFloat(document.getElementById('rate-pt').value)||32.50;
+  const r45=parseFloat(document.getElementById('rate-45').value)||32.50;
+  const r35=parseFloat(document.getElementById('rate-35').value)||27.50;
+  const rM=parseFloat(document.getElementById('rate-monthly').value)||0;
+  const{startD,endD}=getPeriod();
+  const fmtD=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  let lines=['Invoice','Invoice Generator','Joshua Paine','Monzo','Business Account','Sort Code - 04-00-04','Account Number - 48070786','MR J PAINE','Period: '+fmtD(startD)+' - '+fmtD(endD),''];
+  let ptC=0,c45=0,c35=0;
+  Object.keys(byDate).sort().forEach(date=>{
+    const d=new Date(date+'T12:00:00');
+    lines.push(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear());
+    byDate[date].filter(s=>s.type==='class').sort((a,b)=>a.time.localeCompare(b.time)).forEach(s=>{lines.push(s.time+' - class '+s.duration);s.duration===45?c45++:c35++;});
+    byDate[date].filter(s=>s.type==='pt').forEach(s=>{lines.push('PT - '+s.clientName+' '+s.sessionNum+'/'+(s.isNew?'new':s.packSize||'?'));ptC++;});
+    lines.push('');
+  });
+  // Monthly programme: count from logged sessions, use manual rate per occurrence
+  const monthlySessions=getMonthSessions().filter(s=>s.type==='monthly');
+  const monthlyCount=monthlySessions.length;
+  const monthlyTotal=monthlyCount*rM;
+  const ptT=ptC*rPt,c45t=c45*r45,c35t=c35*r35,grand=ptT+c45t+c35t+monthlyTotal;
+  if(monthlyCount>0)lines.push('Georgia K Monthly Programme - £'+rM.toFixed(2));
+  if(c35>0)lines.push('35 min class £'+r35.toFixed(2)+' - '+c35+' - £'+c35t.toFixed(2));
+  if(c45>0)lines.push('40 min Class £'+r45.toFixed(2)+' - '+c45+' - £'+c45t.toFixed(2));
+  lines.push('PT - £'+rPt.toFixed(2)+' - '+ptC+' - £'+ptT.toFixed(2));
+  lines.push('Total - £'+grand.toFixed(2));
+  return lines.join('\n');
+}
+function renderInvoice(){document.getElementById('invoice-preview').textContent=buildInvoice();}
+function copyInvoice(){navigator.clipboard.writeText(buildInvoice()).then(()=>showToast('✓ Copied to clipboard'));}
+function downloadInvoice(){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const lines=buildInvoice().split('\n');
+  let y=20;
+  lines.forEach((line,i)=>{
+    if(i===0){doc.setFontSize(18);doc.setFont('courier','bold');}
+    else{doc.setFontSize(11);doc.setFont('courier','normal');}
+    doc.text(line,20,y);y+=6.5;
+    if(y>275){doc.addPage();y=20;}
+  });
+  const{startD,endD}=getPeriod();const fname='invoice-generator-'+startD.getDate()+'-'+['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][startD.getMonth()]+'-to-'+endD.getDate()+'-'+['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][endD.getMonth()]+'-'+endD.getFullYear()+'.pdf';doc.save(fname);
+}
+
+// SCREENSHOT IMPORT
+async function handleImageUpload(e){
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  document.getElementById('import-s1').style.display='none';
+  document.getElementById('import-s2').style.display='';
+  document.getElementById('import-status').innerHTML='<span class="spinner"></span>Reading '+files.length+' screenshot'+(files.length>1?'s':'')+'…';
+  document.getElementById('detected-list').innerHTML='';
+  document.getElementById('import-actions').style.display='none';
+  detectedSessions=[];
+
+  // Show thumbnail strip
+  const strip=document.getElementById('img-strip');
+  strip.innerHTML='';
+  const toBase64=file=>new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const src=ev.target.result;
+      const b64=src.split(',')[1];
+      const mt=file.type||'image/png';
+      res({b64,mt,src});
+    };
+    reader.readAsDataURL(file);
+  });
+  const images=await Promise.all(files.map(toBase64));
+  images.forEach((img,i)=>{
+    const el=document.createElement('img');
+    el.src=img.src;
+    el.style.cssText='height:80px;border-radius:8px;border:0.5px solid var(--border);flex-shrink:0;object-fit:cover;';
+    el.id='thumb-'+i;
+    strip.appendChild(el);
+  });
+
+  // Analyse each image sequentially with retry on failure
+  let done=0;
+  const failed=[];
+  for(const img of images){
+    done++;
+    document.getElementById('import-status').innerHTML='<span class="spinner"></span>Reading photo '+done+' of '+images.length+'…';
+    let results=await analyseImage(img.b64,img.mt);
+    // Retry once if empty (may be a transient error)
+    if(!results.length){
+      await new Promise(r=>setTimeout(r,1500));
+      results=await analyseImage(img.b64,img.mt);
+      if(!results.length) failed.push(done);
+    }
+    detectedSessions=detectedSessions.concat(results);
+    if(done<images.length) await new Promise(r=>setTimeout(r,1000));
+  }
+  if(failed.length){
+    document.getElementById('import-status').innerHTML='<span class="spinner"></span>Finishing… (photo'+( failed.length>1?'s':'')+' '+failed.join(', ')+' may need retry)';
+  }
+
+  // Auto-switch to correct billing period based on dates in screenshots
+  const metaItems=detectedSessions.filter(s=>s.type==='meta'&&s.earliestDate);
+  if(metaItems.length>0){
+    const earliest=metaItems.map(m=>m.earliestDate).sort()[0];
+    const d=new Date(earliest+'T12:00:00');
+    // If date is 1-15, period started 16th of previous month; if 16-31, current month
+    if(d.getDate()<16){curMonth=d.getMonth()-1;curYear=d.getFullYear();if(curMonth<0){curMonth=11;curYear--;}}
+    else{curMonth=d.getMonth();curYear=d.getFullYear();}
+    updateMonthLabel();
+  }
+  // Filter out meta items
+  detectedSessions=detectedSessions.filter(s=>s.type!=='meta');
+
+  // Deduplicate by type+date+clientName/time
+  const seen=new Set();
+  detectedSessions=detectedSessions.filter(s=>{
+    const key=s.type+s.date+(s.clientName||'')+(s.time||'');
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
+
+  renderDetected();
+}
+
+async function analyseImage(b64,mt){
+  if(!b64)return[];
+  const clients=getClients();
+  const names=clients.map(c=>c.name).join(', ');
+  const prompt=`You are reading a screenshot of an iPhone calendar for a personal trainer.
+Client list: ${names}
+CRITICAL: Only extract events that have a PURPLE or DARK PURPLE coloured background. These are the trainer's own billable PT sessions and classes. Ignore ALL other colours — brown, tan, khaki, blue, grey, white, green, or anything else. The purple events will contain client names or class times as their text.
+
+Extract ONLY the khaki/olive/brown coloured events. For each:
+- Monthly programme (brown, contains words like "monthly", "programme", "program", "online coaching", or "Georgia K Monthly"): → {"type":"monthly","date":"YYYY-MM-DD","label":"exact event text"}
+- PT session (brown, contains a client name but is NOT a monthly programme): match name to client list (fuzzy ok) → {"type":"pt","date":"YYYY-MM-DD","clientName":"matched name"}
+- Group class (brown, contains a time like 05:30/06:15/07:15/08:00/12:00/13:00): get time, duration (35 or 45), and count (e.g. "3x45min" = count 3, "1x35min" = count 1, no prefix = count 1) → {"type":"class","date":"YYYY-MM-DD","time":"HH:MM","duration":45,"count":1}
+
+Do NOT include non-brown events even if the name matches a client in the list above.
+Prioritise "monthly" type over "pt" — if an event says "Georgia K Monthly Programme" it is type monthly, not a PT session.
+Assume the period runs from 16 ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][curMonth]} to 15 ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(curMonth+1)%12]} ${curMonth===11?curYear+1:curYear} if dates are unclear.
+Also return a special first element with the earliest date you can see in the screenshot:
+{"type":"meta","earliestDate":"YYYY-MM-DD"}
+Put this as the FIRST item in the array. Then list the sessions after it.
+Return ONLY a JSON array. No markdown, no other text. Return [{"type":"meta","earliestDate":null}] if no dates found.`;
+  try{
+    const resp=await fetch(PROXY_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]})
+    });
+    const rawText=await resp.text();
+    console.log('API status:',resp.status,'response:',rawText.slice(0,300));
+    if(!resp.ok){console.error('API error',resp.status,rawText);return[];}
+    const data=JSON.parse(rawText);
+    const txt=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    try{return JSON.parse(txt);}catch{return[];}
+  }catch(err){
+    console.error('analyseImage error:',err.name,err.message);
+    return[];
+  }
+}
+
+function renderDetected(){
+  const clients=getClients();
+  const statusEl=document.getElementById('import-status');
+  const listEl=document.getElementById('detected-list');
+  const actEl=document.getElementById('import-actions');
+  if(!detectedSessions.length){statusEl.innerHTML='<span style="color:var(--amber);">No sessions found. Try a closer screenshot.</span>';return;}
+  const totalCount=detectedSessions.reduce((sum,s)=>sum+(s.type==='class'?(s.count||1):1),0);
+  statusEl.innerHTML='<strong>'+totalCount+' session'+(totalCount!==1?'s':'')+' found</strong> — tap to confirm:';
+  let html='';
+  detectedSessions.forEach((s,i)=>{
+    const d=new Date(s.date+'T12:00:00');
+    const ds=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    if(s.type==='pt'){
+      const c=clients.find(c=>c.name.toLowerCase()===s.clientName.toLowerCase())||clients.find(c=>c.name.toLowerCase().startsWith(s.clientName.toLowerCase().split(' ')[0].toLowerCase()));
+      const matched=!!c;
+      // Check if already logged
+      const alreadyLogged=matched&&getSessions().some(x=>x.type==='pt'&&x.clientId==c.id&&x.date===s.date);
+      const icon=alreadyLogged?'⚠️':matched?'✅':'🆕';
+      const dupNote=alreadyLogged?' · <span style="color:var(--amber)">already logged</span>':'';
+      const surnameNote=s.missingSurname&&!matched?' · <span style="color:var(--red)">⚠️ no surname — please update</span>':'';
+      html+='<div class="detected-row '+(alreadyLogged?'':'matched')+'" id="dr'+i+'" style="'+(alreadyLogged?'background:var(--amber-bg);':'')+'"><div style="font-size:20px;">'+icon+'</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.clientName+'</div><div style="font-size:13px;color:var(--text2);">PT · '+ds+(matched?'':' · <strong>new client</strong> — added as single session')+dupNote+surnameNote+'</div></div></div>';
+    }else if(s.type==='monthly'){
+      html+='<div class="detected-row matched" id="dr'+i+'"><div style="font-size:20px;">✅</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+s.label+'</div><div style="font-size:13px;color:var(--text2);">Monthly programme · '+ds+'</div></div></div>';
+    }else{
+      const cnt=s.count||1;html+='<div class="detected-row matched" id="dr'+i+'"><div style="font-size:20px;">✅</div><div style="flex:1;"><div style="font-size:15px;font-weight:500;">'+(cnt>1?cnt+'× ':'')+s.time+' class · '+s.duration+'min</div><div style="font-size:13px;color:var(--text2);">'+ds+(cnt>1?' · logged as '+cnt+' sessions':'')+'</div></div></div>';
+    }
+  });
+  listEl.innerHTML=html;
+  actEl.style.display='';
+}
+
+function confirmImport(){
+  let clients=getClients();
+  let logged=0,skipped=0,added=0;
+  detectedSessions.forEach(s=>{
+    if(s.type==='pt'){
+      let c=clients.find(c=>c.name.toLowerCase()===s.clientName.toLowerCase())||clients.find(c=>c.name.toLowerCase().startsWith(s.clientName.toLowerCase().split(' ')[0].toLowerCase()));
+      if(!c){
+        const newClient={id:Date.now()+Math.random(),name:s.clientName,packSize:1};
+        clients.push(newClient);
+        saveClients(clients);
+        populateDropdown();
+        c=newClient;
+        added++;
+      }
+      // Skip if already logged for this date
+      const isDup=getSessions().some(x=>x.type==='pt'&&x.clientId==c.id&&x.date===s.date);
+      if(isDup){skipped++;return;}
+      doLog('pt',s.date,c.id,c.name,'');logged++;
+    }else if(s.type==='monthly'){
+      doLog('monthly',s.date,null,null,null,null,null,s.label);logged++;
+    }else if(s.type==='class'){
+      const n=s.count||1;
+      for(let i=0;i<n;i++){doLog('class',s.date,null,null,null,s.time,s.duration);}
+      logged+=n;
+    }
+  });
+  document.getElementById('import-actions').style.display='none';
+  document.getElementById('import-status').innerHTML='<span style="color:var(--green);">✓ '+logged+' session'+(logged!==1?'s':'')+' logged'+(added?' · '+added+' new client'+(added>1?'s':'')+' added':'')+'</span><br><button onclick="switchTab('invoice')" style="margin-top:10px;width:100%;padding:11px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">View invoice →</button><button onclick="switchTab('history')" style="margin-top:8px;width:100%;padding:11px;background:var(--bg3);color:var(--text);border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;">View history</button>';
+  document.querySelectorAll('.detected-row.matched').forEach(el=>el.classList.add('confirmed'));
+  showToast('✓ '+logged+' sessions logged');
+}
+
+function addMorePhotos(){
+  // Create a temporary file input, trigger it, merge results
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.multiple=true;
+  input.onchange=async(e)=>{
+    const files=Array.from(e.target.files);
+    if(!files.length)return;
+    document.getElementById('import-actions').style.display='none';
+    document.getElementById('import-status').innerHTML='<span class="spinner"></span>Reading '+files.length+' more screenshot'+(files.length>1?'s':'')+'…';
+
+    const toBase64=file=>new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const src=ev.target.result;
+      const b64=src.split(',')[1];
+      const mt=file.type||'image/png';
+      res({b64,mt,src});
+    };
+    reader.readAsDataURL(file);
+  });
+    const images=await Promise.all(files.map(toBase64));
+
+    // Append thumbnails to strip
+    const strip=document.getElementById('img-strip');
+    images.forEach((img,i)=>{
+      const el=document.createElement('img');
+      el.src=img.src;
+      el.style.cssText='height:80px;border-radius:8px;border:0.5px solid var(--border);flex-shrink:0;object-fit:cover;';
+      strip.appendChild(el);
+    });
+
+    let done=0;
+    const newResults=[];
+    for(const img of images){
+      done++;
+      document.getElementById('import-status').innerHTML='<span class="spinner"></span>Reading photo '+done+' of '+images.length+'…';
+      let results=await analyseImage(img.b64,img.mt);
+      if(!results.length){
+        await new Promise(r=>setTimeout(r,1500));
+        results=await analyseImage(img.b64,img.mt);
+      }
+      newResults.push(...results);
+      if(done<images.length) await new Promise(r=>setTimeout(r,1000));
+    }
+
+    // Merge and deduplicate with existing detectedSessions
+    const seen=new Set(detectedSessions.map(s=>s.type+s.date+(s.clientName||'')+(s.time||'')));
+    newResults.forEach(s=>{
+      const key=s.type+s.date+(s.clientName||'')+(s.time||'');
+      if(!seen.has(key)){seen.add(key);detectedSessions.push(s);}
+    });
+
+    renderDetected();
+  };
+  input.click();
+}
+
+function resetImport(){
+  detectedSessions=[];
+  document.getElementById('import-s1').style.display='';
+  document.getElementById('import-s2').style.display='none';
+  document.getElementById('img-upload').value='';
+}
+
+// INIT
+function exportBackup(){
+  const backup={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    clients:getClients(),
+    sessions:getSessions(),
+    packs:getPackPurchases()
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=url;
+  a.download='invoice-generator-backup-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Backup downloaded');
+}
+
+function importBackup(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const backup=JSON.parse(ev.target.result);
+      if(!backup.version||!backup.clients||!backup.sessions){
+        document.getElementById('restore-msg').innerHTML='<span style="color:var(--red);">Invalid backup file.</span>';
+        return;
+      }
+      if(!confirm('This will replace all current data with the backup from '+new Date(backup.exportedAt).toLocaleDateString('en-GB')+'. Are you sure?'))return;
+      saveClients(backup.clients||[]);
+      saveSessions(backup.sessions||[]);
+      savePackPurchases(backup.packs||[]);
+      populateDropdown();
+      renderExpiryBanner();
+      document.getElementById('restore-msg').innerHTML='<span style="color:var(--green);">✓ Restored '+backup.clients.length+' clients and '+backup.sessions.length+' sessions.</span>';
+      showToast('✓ Backup restored');
+    }catch(err){
+      document.getElementById('restore-msg').innerHTML='<span style="color:var(--red);">Could not read file — is it a valid backup?</span>';
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+function init(){
+  initDate();populateDropdown();renderTodaySummary();renderExpiryBanner();
+  if(!getClients().length){
+    saveClients([
+      {id:1,name:'Bryan P',packSize:10},{id:2,name:'Amandine F',packSize:10},{id:3,name:'Lorraine L',packSize:10},
+      {id:4,name:'Liz W',packSize:10},{id:5,name:'Nick B',packSize:10},{id:6,name:'Claire S',packSize:10},
+      {id:7,name:'Sarah M',packSize:0},{id:8,name:'Andreas W',packSize:10},{id:9,name:'Graeme H',packSize:0},
+      {id:10,name:'Maggie W',packSize:10},{id:11,name:'Simon M',packSize:10},{id:12,name:'Will J',packSize:6},
+      {id:13,name:'Ant G',packSize:6},{id:14,name:'Amanda C',packSize:6},{id:15,name:'Georgia K',packSize:1},
+      {id:16,name:'Grace C',packSize:1},{id:17,name:'Linda S',packSize:0},{id:18,name:'Mark M',packSize:0},
+      {id:19,name:'Rina B',packSize:0},{id:20,name:'John M',packSize:0},{id:21,name:'Susan A',packSize:0},{id:22,name:'Audrey J',packSize:1},
+      {id:23,name:'Rosie B',packSize:0},{id:24,name:'Chloe C',packSize:0},{id:25,name:'Emma L',packSize:6},
+    ]);
+    populateDropdown();
+  }
+  // Register service worker
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+init();
+</script>
+</body>
+</html>Extract ONLY purple-coloured events. For each:
+- Monthly programme (purple, contains words like "monthly", "programme", "program", "online coaching", or "Georgia K Monthly"): → {"type":"monthly","date":"YYYY-MM-DD","label":"exact event text"}
+- Booking app PT session (purple, text like "X Min PT Session - [Client Name] and joshpainept" or "X Min PT Session - [Client Name]"): extract the client name (ignore "joshpainept" — that is the trainer). Format as "First L" (first name + first letter of surname). If no surname is visible, use just the first name and add a flag → {"type":"pt","date":"YYYY-MM-DD","clientName":"First L","missingSurname":true}
+- PT session (purple, contains a client name but is NOT a monthly programme or booking app entry): match name to client list (fuzzy ok) → {"type":"pt","date":"YYYY-MM-DD","clientName":"matched name"}
+- Group class (purple, contains a time like 05:30/06:15/07:15/08:00/12:00/13:00 or text like "1x Class 35" or "3x45min"): get time and duration (35 or 45) and count → {"type":"class","date":"YYYY-MM-DD","time":"HH:MM","duration":45,"count":1}
+
+Ignore ALL non-purple events — blue, brown, tan, khaki, grey, white, green, or anything else.

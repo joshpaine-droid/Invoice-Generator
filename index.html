@@ -862,19 +862,16 @@ async function analyseImage(b64,mt){
   const names=clients.map(c=>c.name).join(', ');
   const prompt=`You are reading a screenshot of an iPhone calendar for a personal trainer.
 Client list: ${names}
-CRITICAL: Only extract events that have a PURPLE or DARK PURPLE coloured background. These are the trainer's own billable PT sessions and classes. Ignore ALL other colours — brown, tan, khaki, blue, grey, white, green, or anything else. The purple events will contain client names or class times as their text.
+CRITICAL: Only extract events with a PURPLE, VIOLET, or DARK PURPLE background. In dark mode on iPhone Calendar these appear as rich purple/violet coloured blocks. These are the trainer's billable sessions. Ignore everything else — blue, brown, grey, white, green, any other colour.
 
-Extract ONLY the khaki/olive/brown coloured events. For each:
-- Monthly programme (brown, contains words like "monthly", "programme", "program", "online coaching", or "Georgia K Monthly"): → {"type":"monthly","date":"YYYY-MM-DD","label":"exact event text"}
-- PT session (brown, contains a client name but is NOT a monthly programme): match name to client list (fuzzy ok) → {"type":"pt","date":"YYYY-MM-DD","clientName":"matched name"}
-- Group class (brown, contains a time like 05:30/06:15/07:15/08:00/12:00/13:00): get time, duration (35 or 45), and count (e.g. "3x45min" = count 3, "1x35min" = count 1, no prefix = count 1) → {"type":"class","date":"YYYY-MM-DD","time":"HH:MM","duration":45,"count":1}
+Extract ONLY purple/violet events. For each:
+- Monthly programme (purple, contains "monthly", "programme", "program", "online coaching", or "Georgia K Monthly"): → {"type":"monthly","date":"YYYY-MM-DD","label":"exact event text"}
+- Booking app PT session (purple, text like "X Min PT Session - [Name] and joshpainept"): extract client name as "First L", flag if no surname → {"type":"pt","date":"YYYY-MM-DD","clientName":"First L","missingSurname":true}
+- PT session (purple, contains a client name): match to client list (fuzzy ok) → {"type":"pt","date":"YYYY-MM-DD","clientName":"matched name"}
+- Group class (purple, contains a time like 05:30/06:15/07:15/08:00/12:00/13:00 or text like "1x Class 35", "3x45min"): → {"type":"class","date":"YYYY-MM-DD","time":"HH:MM","duration":45,"count":1}
 
-Do NOT include non-brown events even if the name matches a client in the list above.
-Prioritise "monthly" type over "pt" — if an event says "Georgia K Monthly Programme" it is type monthly, not a PT session.
-Assume the period runs from 16 ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][curMonth]} to 15 ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][(curMonth+1)%12]} ${curMonth===11?curYear+1:curYear} if dates are unclear.
-Also return a special first element with the earliest date you can see in the screenshot:
-{"type":"meta","earliestDate":"YYYY-MM-DD"}
-Put this as the FIRST item in the array. Then list the sessions after it.
+Do NOT include non-purple events under any circumstances.
+
 Return ONLY a JSON array. No markdown, no other text. Return [{"type":"meta","earliestDate":null}] if no dates found.`;
   try{
     const resp=await fetch(PROXY_URL,{
